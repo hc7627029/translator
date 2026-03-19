@@ -276,6 +276,39 @@ body::after {
   color: var(--text-muted);
 }
 
+/* Source display (replaces textarea after translation for sentence hover) */
+#sourceDisplay {
+  display: none;
+  flex: 1;
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 300;
+  color: var(--text-primary);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+
+#sourceDisplay::-webkit-scrollbar { width: 6px; }
+#sourceDisplay::-webkit-scrollbar-track { background: transparent; }
+#sourceDisplay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* Sentence span hover highlighting */
+.sentence-span {
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: 0 -3px;
+}
+
+.sentence-span.highlight {
+  background: var(--accent-glow);
+  color: var(--accent-warm);
+}
+
 .panel-footer {
   padding: 12px 24px;
   border-top: 1px solid var(--border-subtle);
@@ -515,6 +548,7 @@ kbd {
       </div>
       <div class="text-area">
         <textarea id="sourceText" placeholder="在此输入要翻译的文本..." spellcheck="false"></textarea>
+        <div id="sourceDisplay"></div>
       </div>
       <div class="panel-footer">
         <span id="sourceCount">0 字</span>
@@ -576,6 +610,7 @@ const targetCount = document.getElementById('targetCount');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const swapBtn = document.getElementById('swapBtn');
 const toast = document.getElementById('toast');
+const sourceDisplay = document.getElementById('sourceDisplay');
 
 let direction = 'zh-en'; // zh-en or en-zh
 let debounceTimer = null;
@@ -688,8 +723,7 @@ async function translate() {
       results.push(translated);
     }
     const fullTranslation = results.join(' ');
-    resultText.textContent = fullTranslation;
-    resultText.classList.remove('placeholder');
+    renderSentencePairs(text, fullTranslation);
     updateTargetCount(fullTranslation);
   } catch (err) {
     if (err.name !== 'AbortError') {
@@ -701,6 +735,104 @@ async function translate() {
     currentController = null;
   }
 }
+
+// --- Sentence-level hover highlighting ---
+
+function splitIntoSentences(text) {
+  if (!text || !text.trim()) return [];
+  // Split after sentence-ending punctuation, then by newlines
+  const parts = text.split(/(?<=[.!?。！？])\s*/);
+  const sentences = [];
+  for (const part of parts) {
+    for (const line of part.split(/\n+/)) {
+      const s = line.trim();
+      if (s) sentences.push(s);
+    }
+  }
+  return sentences.length > 0 ? sentences : [text.trim()];
+}
+
+function buildSentenceSpans(container, sentences) {
+  container.innerHTML = '';
+  sentences.forEach((s, i) => {
+    const span = document.createElement('span');
+    span.className = 'sentence-span';
+    span.dataset.idx = i;
+    span.textContent = s;
+    container.appendChild(span);
+    // Add a space or newline between sentences
+    container.appendChild(document.createTextNode(' '));
+  });
+}
+
+function renderSentencePairs(sourceStr, translatedStr) {
+  const sourceSentences = splitIntoSentences(sourceStr);
+  const targetSentences = splitIntoSentences(translatedStr);
+
+  // Build source display with sentence spans
+  buildSentenceSpans(sourceDisplay, sourceSentences);
+  // Build target display with sentence spans
+  buildSentenceSpans(resultText, targetSentences);
+  resultText.classList.remove('placeholder');
+
+  // Store counts for index clamping
+  sourceDisplay.dataset.count = sourceSentences.length;
+  resultText.dataset.count = targetSentences.length;
+
+  // Enter display mode: hide textarea, show sentence display
+  sourceText.style.display = 'none';
+  sourceDisplay.style.display = 'block';
+}
+
+function exitDisplayMode() {
+  sourceDisplay.style.display = 'none';
+  sourceDisplay.innerHTML = '';
+  sourceText.style.display = '';
+}
+
+function highlightPair(idx) {
+  clearHighlights();
+  const sCount = parseInt(sourceDisplay.dataset.count || '0');
+  const tCount = parseInt(resultText.dataset.count || '0');
+  if (sCount === 0 || tCount === 0) return;
+
+  const sIdx = Math.min(idx, sCount - 1);
+  const tIdx = Math.min(idx, tCount - 1);
+
+  const sSpan = sourceDisplay.querySelector(`.sentence-span[data-idx="${sIdx}"]`);
+  const tSpan = resultText.querySelector(`.sentence-span[data-idx="${tIdx}"]`);
+  if (sSpan) sSpan.classList.add('highlight');
+  if (tSpan) tSpan.classList.add('highlight');
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.sentence-span.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+// Event delegation for hover on both panels
+sourceDisplay.addEventListener('mouseover', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) highlightPair(parseInt(span.dataset.idx));
+});
+sourceDisplay.addEventListener('mouseout', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) clearHighlights();
+});
+
+resultText.addEventListener('mouseover', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) highlightPair(parseInt(span.dataset.idx));
+});
+resultText.addEventListener('mouseout', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) clearHighlights();
+});
+
+// Click source display to go back to edit mode
+sourceDisplay.addEventListener('click', () => {
+  exitDisplayMode();
+  sourceText.focus();
+});
 
 function swapLanguages() {
   // Animate button
@@ -719,9 +851,12 @@ function swapLanguages() {
     targetLang.textContent = '中文';
   }
 
-  // Swap content
+  // Swap content - get text from display or textarea
   const currentResult = resultText.classList.contains('placeholder') ? '' : resultText.textContent;
   const currentSource = sourceText.value;
+
+  // Reset to edit mode
+  exitDisplayMode();
 
   sourceText.value = currentResult;
   if (currentSource) {
@@ -748,6 +883,7 @@ function clearSource() {
   sourceText.value = '';
   resultText.textContent = '译文将在此处显示...';
   resultText.classList.add('placeholder');
+  exitDisplayMode();
   updateSourceCount();
   updateTargetCount('');
   sourceText.focus();
