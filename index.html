@@ -1,16 +1,939 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        p.highlight { background-color: yellow; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>译界 · 中英对照翻译</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-deep: #0f1117;
+  --bg-panel: rgba(255, 255, 255, 0.04);
+  --bg-panel-hover: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(255, 255, 255, 0.15);
+  --text-primary: #e8e4df;
+  --text-secondary: #8a8680;
+  --text-muted: #5a5650;
+  --accent-warm: #e8a87c;
+  --accent-coral: #d4735e;
+  --accent-glow: rgba(232, 168, 124, 0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --font-cn: 'Noto Sans SC', sans-serif;
+  --font-display: 'Crimson Pro', serif;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-cn);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Mesh gradient background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(212, 115, 94, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 80%, rgba(232, 168, 124, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 0%, rgba(100, 120, 180, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 32px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent-coral), var(--accent-warm));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 24px rgba(212, 115, 94, 0.3);
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent-warm));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 300;
+  letter-spacing: 2px;
+}
+
+/* Translator container */
+.translator {
+  flex: 1;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  position: relative;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.3s ease;
+  min-height: 520px;
+}
+
+.panel:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+  border-right: none;
+}
+
+.panel:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: none;
+}
+
+.panel:hover {
+  background: var(--bg-panel-hover);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.lang-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-warm);
+  opacity: 0.7;
+}
+
+.panel:last-child .lang-dot {
+  background: var(--accent-coral);
+}
+
+.panel-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.btn-icon:active {
+  transform: scale(0.92);
+}
+
+.text-area {
+  flex: 1;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.text-area textarea {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-cn);
+  font-size: 16px;
+  line-height: 1.8;
+  resize: none;
+  outline: none;
+  font-weight: 300;
+}
+
+.text-area textarea::placeholder {
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+.text-area textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.text-area textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.text-area textarea::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+
+.result-text {
+  flex: 1;
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 300;
+  color: var(--text-primary);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.result-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-text::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+
+.result-text.placeholder {
+  color: var(--text-muted);
+}
+
+/* Source display (replaces textarea after translation for sentence hover) */
+#sourceDisplay {
+  display: none;
+  flex: 1;
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.8;
+  font-weight: 300;
+  color: var(--text-primary);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+
+#sourceDisplay::-webkit-scrollbar { width: 6px; }
+#sourceDisplay::-webkit-scrollbar-track { background: transparent; }
+#sourceDisplay::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* Sentence span hover highlighting */
+.sentence-span {
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin: 0 -3px;
+}
+
+.sentence-span.highlight {
+  background: var(--accent-glow);
+  color: var(--accent-warm);
+}
+
+.paragraph {
+  margin-bottom: 0.6em;
+  min-height: 1em;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.panel-footer {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Swap button - center divider */
+.swap-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.swap-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-subtle);
+}
+
+.swap-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-deep);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.swap-btn:hover {
+  border-color: var(--accent-warm);
+  color: var(--accent-warm);
+  box-shadow: 0 4px 24px rgba(232, 168, 124, 0.2);
+  transform: scale(1.1);
+}
+
+.swap-btn:active {
+  transform: scale(0.95);
+}
+
+.swap-btn.rotating .swap-icon {
+  animation: swapRotate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes swapRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+
+.swap-icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+/* Loading state */
+.loading-indicator {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-warm);
+  font-size: 13px;
+}
+
+.loading-indicator.active {
+  display: flex;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-warm);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(30, 30, 35, 0.95);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(20px);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Keyboard shortcut hint */
+.shortcut-hint {
+  position: fixed;
+  bottom: 20px;
+  right: 32px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 16px;
+  z-index: 1;
+}
+
+.shortcut-hint span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--font-cn);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app {
+    padding: 24px 16px;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .logo-text {
+    font-size: 24px;
+  }
+
+  .translator {
+    flex-direction: column;
+  }
+
+  .panel {
+    min-height: 280px;
+  }
+
+  .panel:first-child {
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-right: 1px solid var(--border-subtle);
+    border-bottom: none;
+  }
+
+  .panel:last-child {
+    border-radius: 0 0 var(--radius) var(--radius);
+    border-left: 1px solid var(--border-subtle);
+    border-top: none;
+  }
+
+  .swap-zone {
+    width: 100%;
+    height: 48px;
+  }
+
+  .swap-divider {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .shortcut-hint {
+    display: none;
+  }
+}
+</style>
 </head>
 <body>
-    <p class="highlight">This is a highlighted paragraph that preserves original formatting.</p>
-    <p>This is a normal paragraph.</p>
+
+<div class="app">
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">译</div>
+      <span class="logo-text">TransLens</span>
+    </div>
+    <p class="subtitle">中 英 对 照 翻 译</p>
+  </header>
+
+  <div class="translator">
+    <!-- Source panel -->
+    <div class="panel" id="sourcePanel">
+      <div class="panel-header">
+        <span class="lang-label">
+          <span class="lang-dot"></span>
+          <span id="sourceLang">中文</span>
+        </span>
+        <div class="panel-actions">
+          <button class="btn-icon" onclick="clearSource()" title="清空">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="text-area">
+        <textarea id="sourceText" placeholder="在此输入要翻译的文本..." spellcheck="false"></textarea>
+        <div id="sourceDisplay"></div>
+      </div>
+      <div class="panel-footer">
+        <span id="sourceCount">0 字</span>
+        <div class="loading-indicator" id="loadingIndicator">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <span>翻译中</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Swap button -->
+    <div class="swap-zone">
+      <div class="swap-divider"></div>
+      <button class="swap-btn" id="swapBtn" onclick="swapLanguages()" title="切换翻译方向">
+        <span class="swap-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        </span>
+      </button>
+    </div>
+
+    <!-- Target panel -->
+    <div class="panel" id="targetPanel">
+      <div class="panel-header">
+        <span class="lang-label">
+          <span class="lang-dot"></span>
+          <span id="targetLang">English</span>
+        </span>
+        <div class="panel-actions">
+          <button class="btn-icon" onclick="copyResult()" title="复制译文">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="text-area">
+        <div class="result-text placeholder" id="resultText">译文将在此处显示...</div>
+      </div>
+      <div class="panel-footer">
+        <span id="targetCount">0 字</span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="shortcut-hint">
+  <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 翻译</span>
+  <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> 切换方向</span>
+</div>
+
+<script>
+const sourceText = document.getElementById('sourceText');
+const resultText = document.getElementById('resultText');
+const sourceLang = document.getElementById('sourceLang');
+const targetLang = document.getElementById('targetLang');
+const sourceCount = document.getElementById('sourceCount');
+const targetCount = document.getElementById('targetCount');
+const loadingIndicator = document.getElementById('loadingIndicator');
+const swapBtn = document.getElementById('swapBtn');
+const toast = document.getElementById('toast');
+const sourceDisplay = document.getElementById('sourceDisplay');
+
+let direction = 'zh-en'; // zh-en or en-zh
+let debounceTimer = null;
+let currentController = null;
+
+// Auto translate on input with debounce
+sourceText.addEventListener('input', () => {
+  updateSourceCount();
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    translate();
+  }, 500);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    translate();
+  }
+  if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+    e.preventDefault();
+    swapLanguages();
+  }
+});
+
+function updateSourceCount() {
+  const text = sourceText.value.trim();
+  const len = text.length;
+  sourceCount.textContent = `${len} 字`;
+}
+
+function updateTargetCount(text) {
+  const len = text.trim().length;
+  targetCount.textContent = `${len} 字`;
+}
+
+// Split text into chunks respecting sentence boundaries, max 500 chars each
+function splitTextIntoChunks(text, maxLen = 450) {
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) {
+      chunks.push(remaining);
+      break;
+    }
+    // Try to split at sentence boundary
+    let splitAt = -1;
+    const separators = ['. ', '。', '! ', '！', '? ', '？', '\n', '; ', '；'];
+    for (const sep of separators) {
+      const idx = remaining.lastIndexOf(sep, maxLen);
+      if (idx > 0 && idx > splitAt) {
+        splitAt = idx + sep.length;
+      }
+    }
+    // Fallback: split at last space or comma
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf(' ', maxLen);
+    }
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf('，', maxLen);
+    }
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf(',', maxLen);
+    }
+    // Last resort: hard split
+    if (splitAt <= 0) {
+      splitAt = maxLen;
+    }
+    chunks.push(remaining.substring(0, splitAt));
+    remaining = remaining.substring(splitAt);
+  }
+  return chunks;
+}
+
+async function translateChunk(text, langPair, signal) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}&de=test@example.com`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.responseData && data.responseData.translatedText) {
+    return data.responseData.translatedText;
+  }
+  throw new Error(data.responseDetails || 'Unknown API error');
+}
+
+async function translate() {
+  const text = sourceText.value.trim();
+  if (!text) {
+    resultText.textContent = '译文将在此处显示...';
+    resultText.classList.add('placeholder');
+    exitDisplayMode();
+    updateTargetCount('');
+    return;
+  }
+
+  if (currentController) currentController.abort();
+  currentController = new AbortController();
+  loadingIndicator.classList.add('active');
+
+  const langPair = direction === 'zh-en' ? 'zh|en' : 'en|zh';
+
+  try {
+    // Translate paragraph by paragraph to preserve structure
+    const lines = text.split('\n');
+    const sourceParagraphs = [];
+    const translatedParagraphs = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      sourceParagraphs.push(trimmed);
+      if (!trimmed) {
+        translatedParagraphs.push('');
+        continue;
+      }
+      const chunks = splitTextIntoChunks(trimmed);
+      const chunkResults = [];
+      for (const chunk of chunks) {
+        chunkResults.push(await translateChunk(chunk, langPair, currentController.signal));
+      }
+      translatedParagraphs.push(chunkResults.join(' '));
+    }
+
+    renderSentencePairs(sourceParagraphs, translatedParagraphs);
+    const fullTranslation = translatedParagraphs.join('\n');
+    resultText.dataset.fullText = fullTranslation;
+    updateTargetCount(fullTranslation);
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Translation error:', err);
+      resultText.textContent = `翻译出错: ${err.message}`;
+      resultText.classList.add('placeholder');
+    }
+  } finally {
+    loadingIndicator.classList.remove('active');
+    currentController = null;
+  }
+}
+
+// --- Sentence-level hover highlighting (paragraph-aware) ---
+
+function splitSentencesInParagraph(text) {
+  if (!text || !text.trim()) return [];
+  const parts = text.split(/(?<=[.!?。！？;；])\s*/);
+  const result = parts.filter(s => s.trim().length > 0);
+  return result.length > 0 ? result : [text.trim()];
+}
+
+function renderSentencePairs(sourceParagraphs, translatedParagraphs) {
+  sourceDisplay.innerHTML = '';
+  resultText.innerHTML = '';
+  resultText.classList.remove('placeholder');
+
+  const count = Math.max(sourceParagraphs.length, translatedParagraphs.length);
+
+  for (let p = 0; p < count; p++) {
+    const sPara = (sourceParagraphs[p] || '').trim();
+    const tPara = (translatedParagraphs[p] || '').trim();
+
+    // Source paragraph
+    const sDiv = document.createElement('div');
+    sDiv.className = 'paragraph';
+    if (!sPara) {
+      sDiv.appendChild(document.createElement('br'));
+    } else {
+      const sSents = splitSentencesInParagraph(sPara);
+      sSents.forEach((s, si) => {
+        const span = document.createElement('span');
+        span.className = 'sentence-span';
+        span.dataset.para = p;
+        span.dataset.sent = si;
+        span.textContent = s;
+        sDiv.appendChild(span);
+        if (si < sSents.length - 1) sDiv.appendChild(document.createTextNode(' '));
+      });
+    }
+    sourceDisplay.appendChild(sDiv);
+
+    // Target paragraph
+    const tDiv = document.createElement('div');
+    tDiv.className = 'paragraph';
+    if (!tPara) {
+      tDiv.appendChild(document.createElement('br'));
+    } else {
+      const tSents = splitSentencesInParagraph(tPara);
+      tSents.forEach((s, si) => {
+        const span = document.createElement('span');
+        span.className = 'sentence-span';
+        span.dataset.para = p;
+        span.dataset.sent = si;
+        span.textContent = s;
+        tDiv.appendChild(span);
+        if (si < tSents.length - 1) tDiv.appendChild(document.createTextNode(' '));
+      });
+    }
+    resultText.appendChild(tDiv);
+  }
+
+  sourceText.style.display = 'none';
+  sourceDisplay.style.display = 'block';
+}
+
+function exitDisplayMode() {
+  sourceDisplay.style.display = 'none';
+  sourceDisplay.innerHTML = '';
+  sourceText.style.display = '';
+}
+
+function highlightPair(para, sent) {
+  clearHighlights();
+  const sSpans = sourceDisplay.querySelectorAll(`.sentence-span[data-para="${para}"]`);
+  const tSpans = resultText.querySelectorAll(`.sentence-span[data-para="${para}"]`);
+  if (!sSpans.length && !tSpans.length) return;
+
+  const sIdx = Math.min(sent, sSpans.length - 1);
+  const tIdx = Math.min(sent, tSpans.length - 1);
+  if (sIdx >= 0 && sSpans[sIdx]) sSpans[sIdx].classList.add('highlight');
+  if (tIdx >= 0 && tSpans[tIdx]) tSpans[tIdx].classList.add('highlight');
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.sentence-span.highlight').forEach(el => el.classList.remove('highlight'));
+}
+
+sourceDisplay.addEventListener('mouseover', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) highlightPair(parseInt(span.dataset.para), parseInt(span.dataset.sent));
+});
+sourceDisplay.addEventListener('mouseout', (e) => {
+  if (e.target.closest('.sentence-span')) clearHighlights();
+});
+resultText.addEventListener('mouseover', (e) => {
+  const span = e.target.closest('.sentence-span');
+  if (span) highlightPair(parseInt(span.dataset.para), parseInt(span.dataset.sent));
+});
+resultText.addEventListener('mouseout', (e) => {
+  if (e.target.closest('.sentence-span')) clearHighlights();
+});
+
+sourceDisplay.addEventListener('click', () => {
+  exitDisplayMode();
+  sourceText.focus();
+});
+
+function swapLanguages() {
+  swapBtn.classList.add('rotating');
+  setTimeout(() => swapBtn.classList.remove('rotating'), 500);
+
+  direction = direction === 'zh-en' ? 'en-zh' : 'zh-en';
+  sourceLang.textContent = direction === 'zh-en' ? '中文' : 'English';
+  targetLang.textContent = direction === 'zh-en' ? 'English' : '中文';
+
+  const currentResult = resultText.classList.contains('placeholder')
+    ? '' : (resultText.dataset.fullText || resultText.innerText);
+  const currentSource = sourceText.value;
+
+  exitDisplayMode();
+  delete resultText.dataset.fullText;
+
+  sourceText.value = currentResult;
+  if (currentSource) {
+    resultText.textContent = currentSource;
+    resultText.classList.remove('placeholder');
+  } else {
+    resultText.textContent = '译文将在此处显示...';
+    resultText.classList.add('placeholder');
+  }
+
+  updateSourceCount();
+  updateTargetCount(currentSource);
+
+  if (sourceText.value.trim()) {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => translate(), 300);
+  }
+
+  showToast(`已切换为 ${direction === 'zh-en' ? '中文 → English' : 'English → 中文'}`);
+}
+
+function clearSource() {
+  sourceText.value = '';
+  resultText.textContent = '译文将在此处显示...';
+  resultText.classList.add('placeholder');
+  delete resultText.dataset.fullText;
+  exitDisplayMode();
+  updateSourceCount();
+  updateTargetCount('');
+  sourceText.focus();
+  showToast('已清空');
+}
+
+async function copyResult() {
+  const text = resultText.dataset.fullText || resultText.innerText;
+  if (resultText.classList.contains('placeholder') || !text || !text.trim()) {
+    showToast('暂无可复制的译文');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('已复制到剪贴板');
+  } catch {
+    showToast('复制失败');
+  }
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+sourceText.focus();
+</script>
 </body>
 </html>
