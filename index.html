@@ -613,6 +613,54 @@ function updateTargetCount(text) {
   targetCount.textContent = `${len} 字`;
 }
 
+// Split text into chunks respecting sentence boundaries, max 500 chars each
+function splitTextIntoChunks(text, maxLen = 450) {
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxLen) {
+      chunks.push(remaining);
+      break;
+    }
+    // Try to split at sentence boundary
+    let splitAt = -1;
+    const separators = ['. ', '。', '! ', '！', '? ', '？', '\n', '; ', '；'];
+    for (const sep of separators) {
+      const idx = remaining.lastIndexOf(sep, maxLen);
+      if (idx > 0 && idx > splitAt) {
+        splitAt = idx + sep.length;
+      }
+    }
+    // Fallback: split at last space or comma
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf(' ', maxLen);
+    }
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf('，', maxLen);
+    }
+    if (splitAt <= 0) {
+      splitAt = remaining.lastIndexOf(',', maxLen);
+    }
+    // Last resort: hard split
+    if (splitAt <= 0) {
+      splitAt = maxLen;
+    }
+    chunks.push(remaining.substring(0, splitAt));
+    remaining = remaining.substring(splitAt);
+  }
+  return chunks;
+}
+
+async function translateChunk(text, langPair, signal) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+  const res = await fetch(url, { signal });
+  const data = await res.json();
+  if (data.responseStatus === 200 && data.responseData) {
+    return data.responseData.translatedText;
+  }
+  throw new Error('Translation failed');
+}
+
 async function translate() {
   const text = sourceText.value.trim();
   if (!text) {
@@ -631,24 +679,21 @@ async function translate() {
   loadingIndicator.classList.add('active');
 
   const langPair = direction === 'zh-en' ? 'zh|en' : 'en|zh';
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+  const chunks = splitTextIntoChunks(text);
 
   try {
-    const res = await fetch(url, { signal: currentController.signal });
-    const data = await res.json();
-
-    if (data.responseStatus === 200 && data.responseData) {
-      const translated = data.responseData.translatedText;
-      resultText.textContent = translated;
-      resultText.classList.remove('placeholder');
-      updateTargetCount(translated);
-    } else {
-      resultText.textContent = '翻译出错，请稍后重试';
-      resultText.classList.add('placeholder');
+    const results = [];
+    for (const chunk of chunks) {
+      const translated = await translateChunk(chunk, langPair, currentController.signal);
+      results.push(translated);
     }
+    const fullTranslation = results.join(' ');
+    resultText.textContent = fullTranslation;
+    resultText.classList.remove('placeholder');
+    updateTargetCount(fullTranslation);
   } catch (err) {
     if (err.name !== 'AbortError') {
-      resultText.textContent = '网络错误，请检查连接';
+      resultText.textContent = '翻译出错，请稍后重试';
       resultText.classList.add('placeholder');
     }
   } finally {
